@@ -1848,6 +1848,11 @@ execution state. Intrinsics for the use of these instructions are specified in
 data placement hints (FEAT_PCDPHINT) instructions and their associated
 intrinsics are available on the target.
 
+### Contention Management hints
+
+`__ARM_FEATURE_CMH` is defined to `1` if the Contention Management hints
+(FEAT_CMH) instructions and their associated intrinsics are available on the target.
+
 ## Floating-point and vector hardware
 
 ### Hardware floating point
@@ -2654,6 +2659,7 @@ be found in [[BA]](#BA).
 | [`__ARM_FEATURE_CDE`](#custom-datapath-extension)                                                                                                       | Custom Datapath Extension                                                                          | 0x01        |
 | [`__ARM_FEATURE_CDE_COPROC`](#custom-datapath-extension)                                                                                                | Custom Datapath Extension                                                                          | 0xf         |
 | [`__ARM_FEATURE_CLZ`](#clz)                                                                                                                             | CLZ instruction                                                                                    | 1           |
+| [`__ARM_FEATURE_CMH`](#contention-management-hints)                                                                                                     | Contention management hints                                                                        | 1           |
 | [`__ARM_FEATURE_COMPLEX`](#complex-number-intrinsics)                                                                                                   | Armv8.3-A extension                                                                                | 1           |
 | [`__ARM_FEATURE_COPROC`](#coprocessor-intrinsics)                                                                                                       | Coprocessor Intrinsics                                                                             | 1           |
 | [`__ARM_FEATURE_CRC32`](#crc32-extension)                                                                                                               | CRC32 extension                                                                                    | 1           |
@@ -4979,6 +4985,58 @@ The fourth argument can contain the following values:
 | -------------------- | --------- | --------------------------------------------------------------------------------- |
 | KEEP                 | 0         | Signals to retain the updated location in the local cache of the updating PE.     |
 | STRM                 | 1         | Signals to not retain the updated location in the local cache of the updating PE. |
+
+## Atomic store with CMH intrinsics
+
+These intrinsics provide an atomic store, which will
+make use of the `STCPH` or `SHUH` hint instructions immediately followed by the
+associated store instruction. These intrinsics are type generic and 
+support scalar types from 8-64 bits and are available when
+`__ARM_FEATURE_CMH` is defined.
+
+To access these intrinsics, `<arm_acle.h>` should be included.
+
+``` c
+  void __arm_atomic_store_with_stcph(type *ptr, type data, int memory_order);
+  void __arm_atomic_store_with_shuh(type *ptr, type data, int memory_order, int priority_hint);
+```
+
+The first argument in these intrinsics is a pointer `ptr` which is the location to store to.
+The second argument `data` is the data which is to be stored.
+The third argument `mem` can be one of 3 memory ordering variables supported by atomic_store:
+__ATOMIC_RELAXED, __ATOMIC_SEQ_CST, and __ATOMIC_RELEASE.
+The fourth argument `priority_hint` can be either 0 or 1. If set to 1 then if the next instruction in program order generates
+an Explicit Memory Write Effect, then there is a performance benefit if that Explicit Memory Write Effect
+is sequenced before Memory Effects from other threads of execution in the coherence order to the same
+location.
+
+## Atomic fetch with CMH intrinsics
+
+These intrinsics provide some atomic fetch operations, which will
+make use of the `SHUH` hint instruction immediately followed by the
+associated fetch instructions. These intrinsics are type generic and 
+support scalar types from 8-64 bits and are available when
+`__ARM_FEATURE_CMH` is defined.
+
+To access these intrinsics, `<arm_acle.h>` should be included.
+
+``` c
+  type __arm_atomic_fetch_add_with_shuh(type *ptr, type data, int memory_order, int priority_hint);
+  type __arm_atomic_fetch_sub_with_shuh(type *ptr, type data, int memory_order, int priority_hint);
+  type __arm_atomic_fetch_and_with_shuh(type *ptr, type data, int memory_order, int priority_hint);
+  type __arm_atomic_fetch_xor_with_shuh(type *ptr, type data, int memory_order, int priority_hint);
+  type __arm_atomic_fetch_or_with_shuh(type *ptr, type data, int memory_order, int priority_hint);
+  type __arm_atomic_fetch_nand_with_shuh(type *ptr, type data, int memory_order, int priority_hint);
+```
+
+The first argument in these intrinsic is a pointer `ptr` which is the location to store to.
+The second argument `data` is the data which is to be stored.
+The third argument `mem` can be one of 6 memory ordering variables supported by atomic_fetch:
+__ATOMIC_RELAXED, __ATOMIC_SEQ_CST, __ATOMIC_ACQUIRE, __ATOMIC_CONSUME, __ATOMIC_ACQ_REL and __ATOMIC_RELEASE.
+The fourth argument `priority_hint` can be either 0 or 1. If set to 1 then if the next instruction in program order generates
+an Explicit Memory Write Effect, then there is a performance benefit if that Explicit Memory Write Effect
+is sequenced before Memory Effects from other threads of execution in the coherence order to the same
+location.
 
 # Custom Datapath Extension
 
