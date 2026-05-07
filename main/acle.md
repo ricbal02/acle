@@ -488,7 +488,7 @@ Armv8.4-A [[ARMARMv84]](#ARMARMv84). Support is added for the Dot Product intrin
 * Added [**Alpha**](#current-status-and-anticipated-changes) support
   for Brain 16-bit floating-point vector multiplication intrinsics.
 * Redesigned atomic store with hints intrinsics.
-
+* Added support for producer-consumer data placement hints. [**Alpha** state]
 ### References
 
 This document refers to the following documents.
@@ -1849,7 +1849,7 @@ execution state. Intrinsics for the use of these instructions are specified in
 data placement hints (FEAT_PCDPHINT) instructions and their associated
 intrinsics are available on the target.
 
-### Contention Management hints
+### Contention Management hints [**Alpha** state]
 
 `__ARM_FEATURE_CMH` is defined to `1` if the Contention Management hints
 (FEAT_CMH) instructions and their associated intrinsics are available on the target.
@@ -4991,58 +4991,40 @@ target. The following hint values are defined:
 | ---------------- | --------- | -------------------------- | --------------------------------------------------------------------------------- |
 | HINT_STSHH_KEEP  | 0         | `__ARM_FEATURE_PCDPHINT`   | Requests retention of the updated location in the local cache of the updating PE. |
 | HINT_STSHH_STRM  | 1         | `__ARM_FEATURE_PCDPHINT`   | Requests that the updated location not be retained in the local cache of the updating PE. |
+| HINT_STCPH       | 2         | `__ARM_FEATURE_CMH`        | Ensures that the memory write effect of the next instruction occurs before any other effects from other threads.|
+| HINT_SHUH        | 3         | `__ARM_FEATURE_CMH`        | Informs that the next instruction generates an effect in a location that one or more other threads of execution are likely to subsequently update. |
+| HINT_SHUH_PH     | 4         | `__ARM_FEATURE_CMH`        | PH adds the effects of STCPH to SHUH. |
 
-## Atomic store with CMH intrinsics
-
-These intrinsics provide an atomic store, which will
-make use of the `STCPH` or `SHUH` hint instructions immediately followed by the
-associated store instruction. These intrinsics are type generic and 
-support scalar types from 8-64 bits and are available when
-`__ARM_FEATURE_CMH` is defined.
-
-To access these intrinsics, `<arm_acle.h>` should be included.
-
-``` c
-  void __arm_atomic_store_with_stcph(type *ptr, type data, int memory_order);
-  void __arm_atomic_store_with_shuh(type *ptr, type data, int memory_order, int priority_hint);
-```
-
-The first argument in these intrinsics is a pointer `ptr` which is the location to store to.
-The second argument `data` is the data which is to be stored.
-The third argument `mem` can be one of 3 memory ordering variables supported by atomic_store:
-__ATOMIC_RELAXED, __ATOMIC_SEQ_CST, and __ATOMIC_RELEASE.
-The fourth argument `priority_hint` can be either 0 or 1. If set to 1 then if the next instruction in program order generates
-an Explicit Memory Write Effect, then there is a performance benefit if that Explicit Memory Write Effect
-is sequenced before Memory Effects from other threads of execution in the coherence order to the same
-location.
-
-## Atomic fetch with CMH intrinsics
+## Atomic fetch with hints intrinsics [**Alpha** state]
 
 These intrinsics provide some atomic fetch operations, which will
-make use of the `SHUH` hint instruction immediately followed by the
+make use of hint instructions immediately followed by the
 associated fetch instructions. These intrinsics are type generic and 
-support scalar types from 8-64 bits and are available when
-`__ARM_FEATURE_CMH` is defined.
+supports scalar integral and floating-point types of 8, 16, 32, and 64 bits.
 
 To access these intrinsics, `<arm_acle.h>` should be included.
 
 ``` c
-  type __arm_atomic_fetch_add_with_shuh(type *ptr, type data, int memory_order, int priority_hint);
-  type __arm_atomic_fetch_sub_with_shuh(type *ptr, type data, int memory_order, int priority_hint);
-  type __arm_atomic_fetch_and_with_shuh(type *ptr, type data, int memory_order, int priority_hint);
-  type __arm_atomic_fetch_xor_with_shuh(type *ptr, type data, int memory_order, int priority_hint);
-  type __arm_atomic_fetch_or_with_shuh(type *ptr, type data, int memory_order, int priority_hint);
-  type __arm_atomic_fetch_nand_with_shuh(type *ptr, type data, int memory_order, int priority_hint);
+  type __arm_atomic_fetch_add_with_hint(type *ptr, type data, int memory_order, int hint);
+  type __arm_atomic_fetch_sub_with_hint(type *ptr, type data, int memory_order, int hint);
+  type __arm_atomic_fetch_and_with_hint(type *ptr, type data, int memory_order, int hint);
+  type __arm_atomic_fetch_xor_with_hint(type *ptr, type data, int memory_order, int hint);
+  type __arm_atomic_fetch_or_with_hint(type *ptr, type data, int memory_order, int hint);
 ```
 
 The first argument in these intrinsic is a pointer `ptr` which is the location to store to.
 The second argument `data` is the data which is to be stored.
 The third argument `mem` can be one of 6 memory ordering variables supported by atomic_fetch:
 __ATOMIC_RELAXED, __ATOMIC_SEQ_CST, __ATOMIC_ACQUIRE, __ATOMIC_CONSUME, __ATOMIC_ACQ_REL and __ATOMIC_RELEASE.
-The fourth argument `priority_hint` can be either 0 or 1. If set to 1 then if the next instruction in program order generates
-an Explicit Memory Write Effect, then there is a performance benefit if that Explicit Memory Write Effect
-is sequenced before Memory Effects from other threads of execution in the coherence order to the same
-location.
+
+The fourth argument `hint` selects the requested hint. The set of valid
+hint values depends on the architectural features supported by the
+target. The following hint values are defined:
+
+| **Hint**         | **Value** | **Feature**                | **Summary**                                                                       |
+| ---------------- | --------- | -------------------------- | --------------------------------------------------------------------------------- |
+| HINT_SHUH        | 0         | `__ARM_FEATURE_CMH`        | Informs that the next instruction generates an effect in a location that one or more other threads of execution are likely to subsequently update. |
+| HINT_SHUH_PH     | 1         | `__ARM_FEATURE_CMH`        | PH adds the effects of STCPH to SHUH. |
 
 # Custom Datapath Extension
 
